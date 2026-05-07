@@ -1,0 +1,81 @@
+# ============================================================
+# SIMPLE CODE OPTIMIZATION
+# Technique:
+# 1. Constant Folding
+# 2. Dead Code Elimination
+# ============================================================
+
+tac = [
+
+    "t1 = 10",
+    "t2 = 20",
+    "t3 = 5 + 3",
+    "t4 = t3 * 2",
+    "t5 = 100",
+    "t5 = 200",      # dead code
+    "t6 = 4 * 5"
+]
+
+print("ORIGINAL TAC:\n")
+
+for line in tac:
+    print(line)
+
+optimized = []
+
+assigned = {}
+
+# ============================================================
+# OPTIMIZATION
+# ============================================================
+
+for line in tac:
+
+    left, right = line.split("=")
+
+    left = left.strip()
+    right = right.strip()
+
+    # ========================================================
+    # CONSTANT FOLDING
+    # ========================================================
+
+    if "+" in right:
+
+        a, b = right.split("+")
+
+        if a.strip().isdigit() and b.strip().isdigit():
+
+            value = int(a) + int(b)
+
+            right = str(value)
+
+    elif "*" in right:
+
+        a, b = right.split("*")
+
+        if a.strip().isdigit() and b.strip().isdigit():
+
+            value = int(a) * int(b)
+
+            right = str(value)
+
+    # ========================================================
+    # DEAD CODE ELIMINATION
+    # ========================================================
+
+    assigned[left] = f"{left} = {right}"
+
+# final optimized code
+for key in assigned:
+
+    optimized.append(assigned[key])
+
+# ============================================================
+# OUTPUT
+# ============================================================
+
+print("\nOPTIMIZED TAC:\n")
+
+for line in optimized:
+    print(line)
