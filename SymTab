@@ -1,0 +1,373 @@
+
+program = [
+
+    "START 100",
+    "READ A",
+    "MOVER AREG, B",
+    "ADD AREG, ='5'",
+    "MOVEM AREG, C",
+
+    "LOOP MOVER BREG, A",
+    "ADD BREG, ='3'",
+
+    "LTORG",
+
+    "BACK MOVER CREG, C",
+    "ADD CREG, ='10'",
+    "BC LT, LOOP",
+
+    "STOP",
+
+    "A DS 1",
+    "B DC 5",
+    "C DS 1",
+
+    "D EQU B",
+
+    "ORIGIN 120",
+
+    "SUB AREG, B",
+
+    "END"
+]
+
+
+MOT = {
+
+    # Imperative Statements
+    "STOP":   ("IS", "00"),
+    "ADD":    ("IS", "01"),
+    "SUB":    ("IS", "02"),
+    "MULT":   ("IS", "03"),
+    "MOVER":  ("IS", "04"),
+    "MOVEM":  ("IS", "05"),
+    "COMP":   ("IS", "06"),
+    "BC":     ("IS", "07"),
+    "DIV":    ("IS", "08"),
+    "READ":   ("IS", "09"),
+    "PRINT":  ("IS", "10"),
+
+    # Assembler Directives
+    "START":  ("AD", "01"),
+    "END":    ("AD", "02"),
+    "ORIGIN": ("AD", "03"),
+    "EQU":    ("AD", "04"),
+    "LTORG":  ("AD", "05"),
+
+    # Declarative Statements
+    "DS":     ("DL", "01"),
+    "DC":     ("DL", "02")
+}
+
+REG = {
+
+    "AREG": 1,
+    "BREG": 2,
+    "CREG": 3,
+    "DREG": 4
+}
+
+
+COND = {
+
+    "LT": 1,
+    "LE": 2,
+    "EQ": 3,
+    "GT": 4,
+    "GE": 5,
+    "ANY": 6
+}
+
+
+
+SYMTAB = {}
+
+LITTAB = []
+
+# POOL TABLE
+POOLTAB = [0]
+
+# INTERMEDIATE CODE
+IC = []
+
+# LOCATION COUNTER
+lc = 0
+
+# ============================================================
+# FUNCTION : ADD LITERAL
+# ============================================================
+
+def add_literal(lit):
+
+    # Check if literal already exists
+    for i in range(len(LITTAB)):
+
+        if LITTAB[i][0] == lit:
+            return i
+
+    # Add new literal
+    LITTAB.append([lit, -1])
+
+    return len(LITTAB) - 1
+
+# ============================================================
+# FUNCTION : PROCESS LITERALS
+# ============================================================
+
+def process_literals():
+
+    global lc
+
+    for i in range(len(LITTAB)):
+
+        lit, addr = LITTAB[i]
+
+        # If address not assigned
+        if addr == -1:
+
+            # Assign address
+            LITTAB[i][1] = lc
+
+            # Extract literal value
+            value = lit.replace("='", "").replace("'", "")
+
+            # Add IC
+            IC.append(f"{lc}\t(DL,02)\t(C,{value})")
+
+            lc += 1
+
+# ============================================================
+# PASS 1
+# ============================================================
+
+for line in program:
+
+    # Remove comma and split
+    words = line.replace(",", "").split()
+
+    # ========================================================
+    # START
+    # ========================================================
+
+    if words[0] == "START":
+
+        lc = int(words[1])
+
+        IC.append(f"-\t(AD,01)\t(C,{lc})")
+
+    # ========================================================
+    # END
+    # ========================================================
+
+    elif words[0] == "END":
+
+        IC.append(f"-\t(AD,02)")
+
+        process_literals()
+
+    # ========================================================
+    # LTORG
+    # ========================================================
+
+    elif words[0] == "LTORG":
+
+        IC.append(f"-\t(AD,05)")
+
+        process_literals()
+
+        POOLTAB.append(len(LITTAB))
+
+    # ========================================================
+    # ORIGIN
+    # ========================================================
+
+    elif words[0] == "ORIGIN":
+
+        value = int(words[1])
+
+        IC.append(f"-\t(AD,03)\t(C,{value})")
+
+        lc = value
+
+    # ========================================================
+    # EQU
+    # ========================================================
+
+    elif len(words) == 3 and words[1] == "EQU":
+
+        sym1 = words[0]
+        sym2 = words[2]
+
+        SYMTAB[sym1] = SYMTAB[sym2]
+
+        IC.append(f"-\t(AD,04)")
+
+    # ========================================================
+    # DS
+    # ========================================================
+
+    elif len(words) == 3 and words[1] == "DS":
+
+        sym = words[0]
+
+        size = int(words[2])
+
+        # Store address and size
+        SYMTAB[sym] = [lc, size]
+
+        IC.append(f"{lc}\t(DL,01)\t(C,{size})")
+
+        lc += size
+
+    # ========================================================
+    # DC
+    # ========================================================
+
+    elif len(words) == 3 and words[1] == "DC":
+
+        sym = words[0]
+
+        value = words[2]
+
+        # DC length always 1
+        SYMTAB[sym] = [lc, 1]
+
+        IC.append(f"{lc}\t(DL,02)\t(C,{value})")
+
+        lc += 1
+
+    # ========================================================
+    # IMPERATIVE STATEMENTS
+    # ========================================================
+
+    else:
+
+        label = None
+
+        # ====================================================
+        # LABEL PRESENT
+        # ====================================================
+
+        if words[0] not in MOT:
+
+            label = words[0]
+
+            # Label length = 1
+            SYMTAB[label] = [lc, 1]
+
+            words = words[1:]
+
+        # Instruction
+        inst = words[0]
+
+        opcode = MOT[inst]
+
+        temp = f"{lc}\t({opcode[0]},{opcode[1]})\t"
+
+        # ====================================================
+        # OPERANDS
+        # ====================================================
+
+        for op in words[1:]:
+
+            # REGISTER
+            if op in REG:
+
+                temp += f"(R,{REG[op]}) "
+
+            # CONDITION CODE
+            elif op in COND:
+
+                temp += f"(CC,{COND[op]}) "
+
+            # LITERAL
+            elif op.startswith("='"):
+
+                idx = add_literal(op)
+
+                temp += f"(L,{idx}) "
+
+            # CONSTANT
+            elif op.isdigit():
+
+                temp += f"(C,{op}) "
+
+            # SYMBOL
+            else:
+
+                # Forward reference
+                if op not in SYMTAB:
+
+                    SYMTAB[op] = [-1, 1]
+
+                temp += f"(S,{op}) "
+
+        # Add IC
+        IC.append(temp)
+
+        lc += 1
+
+# ============================================================
+# OUTPUT : INTERMEDIATE CODE
+# ============================================================
+
+print()
+print("=" * 60)
+print("INTERMEDIATE CODE")
+print("=" * 60)
+
+for line in IC:
+    print(line)
+
+# ============================================================
+# OUTPUT : SYMBOL TABLE
+# ============================================================
+
+print()
+print("=" * 60)
+print("SYMBOL TABLE")
+print("=" * 60)
+
+print("SYMBOL\tADDRESS\tLENGTH")
+
+for sym in SYMTAB:
+
+    address = SYMTAB[sym][0]
+    length = SYMTAB[sym][1]
+
+    print(sym, "\t", address, "\t", length)
+
+# ============================================================
+# OUTPUT : LITERAL TABLE
+# ============================================================
+
+print()
+print("=" * 60)
+print("LITERAL TABLE")
+print("=" * 60)
+
+print("INDEX\tLITERAL\tADDRESS")
+
+for i in range(len(LITTAB)):
+
+    print(i, "\t", LITTAB[i][0], "\t", LITTAB[i][1])
+
+# ============================================================
+# OUTPUT : POOL TABLE
+# ============================================================
+
+print()
+print("=" * 60)
+print("POOL TABLE")
+print("=" * 60)
+
+print("POOL#\tSTART")
+
+for i in range(len(POOLTAB)):
+
+    print(i + 1, "\t", POOLTAB[i])
+
+print()
+print("=" * 60)
+print("PASS 1 COMPLETE")
+print("=" * 60)

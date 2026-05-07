@@ -1,0 +1,66 @@
+# ====================================================
+# CODE OPTIMIZATION
+# ====================================================
+
+TAC = [
+
+    "t1 = 10 + 20",
+    "t2 = a + b",
+    "t3 = a + b"
+]
+
+print()
+print("=" * 50)
+print("ORIGINAL TAC")
+print("=" * 50)
+
+for x in TAC:
+
+    print(x)
+
+expr = {}
+
+optimized = []
+
+for line in TAC:
+
+    lhs, rhs = line.split("=")
+
+    lhs = lhs.strip()
+
+    rhs = rhs.strip()
+
+    parts = rhs.split()
+
+    # CONSTANT FOLDING
+    if len(parts) == 3:
+
+        a, op, b = parts
+
+        if a.isdigit() and b.isdigit():
+
+            val = str(eval(a + op + b))
+
+            optimized.append(lhs + " = " + val)
+
+            continue
+
+    # COMMON SUBEXPRESSION
+    if rhs in expr:
+
+        optimized.append(lhs + " = " + expr[rhs])
+
+    else:
+
+        expr[rhs] = lhs
+
+        optimized.append(line)
+
+print()
+print("=" * 50)
+print("OPTIMIZED TAC")
+print("=" * 50)
+
+for x in optimized:
+
+    print(x)

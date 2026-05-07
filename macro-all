@@ -1,0 +1,81 @@
+
+MNT = {} 
+MDT = []
+
+def pass1(code):
+    i = 0
+    program_lines = []
+    while i < len(code):
+        line = code[i].strip()
+        if line == "MACRO":
+            i += 1
+            parts = code[i].replace(',', ' ').split()
+            name, params = parts[0], parts[1:]
+            MNT[name] = [len(MDT), len(params)]
+            
+            i += 1
+            while code[i].strip() != "MEND":
+                curr = code[i]
+                for idx, p in enumerate(params):
+                    curr = curr.replace(p, f"#{idx}")
+                MDT.append(curr)
+                i += 1
+            MDT.append("MEND")
+        else:
+            if line: program_lines.append(line)
+        i += 1
+    return program_lines
+
+
+def expand(line):
+    parts = line.replace(',', ' ').split()
+    if not parts: return
+    m_name = parts[0]
+    
+    if m_name in MNT:
+        idx, count = MNT[m_name]
+        actual_args = parts[1:]
+        if len(actual_args) != count:
+            print(f"; ERROR: {m_name} expected {count} args")
+            return
+        while MDT[idx] != "MEND":
+            curr_line = MDT[idx]
+            for j in range(count):
+                curr_line = curr_line.replace(f"#{j}", actual_args[j])
+            expand(curr_line)
+            idx += 1
+    else:
+        standards = ["START", "END", "MOV", "ADD", "SUB"]
+        if m_name not in standards:
+            print(f"; ERROR: Macro '{m_name}' not defined!")
+        else:
+            print(line)
+
+
+input_code = [
+    "MACRO", "STORE &REG, &VAL", "MOV &REG, &VAL", "MEND",
+    "MACRO", "INCREMENT &R", "ADD &R, 1", "STORE &R, RESULT", "MEND",
+    "MACRO", "ADDITION &A, &B", "MOV AREG, &A", "ADD AREG, &B", "INCREMENT AREG", "MEND",
+    "START", "ADDITION NUM1, NUM2", "END"
+]
+
+clean_prog = pass1(input_code)
+
+
+print("--- MACRO NAME TABLE (MNT) ---")
+print(f"{'NAME':<12} | {'INDEX':<6} | {'PARAMS'}")
+print("-" * 30)
+for name, info in MNT.items():
+    # <12 means 12 spaces for name, <6 means 6 for index
+    print(f"{name:<12} | {info[0]:<6} | {info[1]}")
+
+
+print("\n--- MACRO DEFINITION TABLE (MDT) ---")
+print(f"{'IDX':<4} | {'INSTRUCTION'}")
+print("-" * 25)
+for i, l in enumerate(MDT):
+    print(f"{i:<4} | {l}")
+
+print("\n--- FINAL EXPANDED CODE ---")
+for line in clean_prog:
+    expand(line)

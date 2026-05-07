@@ -1,0 +1,28 @@
+%{
+#include <stdio.h>
+%}
+%%
+"int"|"float"|"char"|"void"|"if"|"else"|"while"|"for"|"return"|"printf"|"scanf" { printf("%-10s = KEYWORD\n", yytext); }
+"%d"|"%c"|"%f"|"%s"         { printf("%-10s = FORMAT SPECIFIER\n", yytext); }
+[0-9]+\.[0-9]+              { printf("%-10s = FLOAT\n", yytext); }
+[0-9]+                      { printf("%-10s = INTEGER\n", yytext); }
+[a-zA-Z_][a-zA-Z0-9_]*      { printf("%-10s = IDENTIFIER\n", yytext); }
+"&&"                        { printf("%-10s = LOGICAL AND\n", yytext); }
+"||"                        { printf("%-10s = LOGICAL OR\n", yytext); }
+"!="|"+="|"-="|"*="|"/="   { printf("%-10s = COMPOUND OP\n", yytext); }
+"<="|">="|"=="              { printf("%-10s = RELATIONAL OP\n", yytext); }
+[<>]                        { printf("%-10s = RELATIONAL OP\n", yytext); }
+"="                         { printf("%-10s = ASSIGNMENT OP\n", yytext); }
+"+"|"-"|"*"|"/"             { printf("%-10s = ARITHMETIC OP\n", yytext); }
+"{"|"}"|"("|")"|";"|"#"    { printf("%-10s = PUNCTUATION\n", yytext); }
+[ \t\n]                     { ; }
+.                           { printf("%-10s = UNKNOWN\n", yytext); }
+%%
+int yywrap(){ return 1; }
+int main(){
+    printf("Enter C code (Ctrl+D to stop):\n");
+    yylex();
+    printf("\nDone!\n");
+    return 0;
+}
+

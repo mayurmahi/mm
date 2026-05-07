@@ -1,0 +1,54 @@
+# ====================================================
+# TAC FOR WHILE LOOP
+# ====================================================
+
+t = 0
+l = 0
+
+def temp():
+
+    global t
+
+    t += 1
+
+    return "t" + str(t)
+
+def label():
+
+    global l
+
+    l += 1
+
+    return "L" + str(l)
+
+cond = input("Enter Condition : ")
+
+stmt = input("Enter Statement : ")
+
+L1 = label()
+L2 = label()
+L3 = label()
+
+print(L1 + ":")
+
+x = temp()
+
+print(x, "=", cond)
+
+print("if", x, "goto", L2)
+
+print("goto", L3)
+
+print(L2 + ":")
+
+lhs, rhs = stmt.split("=")
+
+y = temp()
+
+print(y, "=", rhs)
+
+print(lhs, "=", y)
+
+print("goto", L1)
+
+print(L3 + ":")

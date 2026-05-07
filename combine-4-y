@@ -1,0 +1,73 @@
+%{
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+
+int mode = 0;
+extern char line[];
+extern int pos;
+void yyerror(const char *s);
+int yylex();
+%}
+
+%union{ double dval; char *sval; }
+%token <dval> NUMBER
+%token <sval> STRING
+%token SQRT STRLEN ALPHA UNDER
+%type  <dval> expr var
+%left '+' '-'
+%left '*' '/'
+
+%%
+start : expr '\n' {
+            if(mode==1) printf("Result = %g\n", $1);
+            else        printf("Function Result = %g\n", $1);
+        }
+      | var '\n'  { printf("Valid variable\n"); }
+      ;
+
+expr : expr '+' expr         { $$=$1+$3; }
+     | expr '-' expr         { $$=$1-$3; }
+     | expr '*' expr         { $$=$1*$3; }
+     | expr '/' expr         { $$=($3==0)?0:$1/$3; }
+     | '(' expr ')'          { $$=$2; }
+     | SQRT '(' expr ')'     { $$=sqrt($3); }
+     | STRLEN '(' STRING ')' { $$=strlen($3); }
+     | NUMBER                { $$=$1; }
+     ;
+
+var : ALPHA         { $$=0; }
+    | var ALPHA     { $$=0; }
+    | var NUMBER    { $$=0; }
+    | var UNDER var { $$=0; }
+    ;
+%%
+
+void yyerror(const char *s){
+    if(mode==3) printf("Invalid variable\n");
+    else        printf("Error: %s\n", s);
+}
+
+int main(){
+    int ch;
+    while(1){
+        printf("\n1.Expression  2.Function  3.Variable  4.Exit\n");
+        printf("Choice: ");
+        scanf("%d",&ch);
+        getchar();
+
+        if(ch==4){ printf("Bye!\n"); break; }
+        if(ch<1||ch>3){ printf("Invalid!\n"); continue; }
+
+        mode=ch;
+        if(mode==1) printf("Enter expression (e.g. 5+8*2): ");
+        if(mode==2) printf("Enter function (e.g. sqrt(25)): ");
+        if(mode==3) printf("Enter variable name: ");
+
+        fgets(line,100,stdin);
+        pos=0;
+        yyparse();
+    }
+    return 0;
+}

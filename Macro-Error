@@ -1,0 +1,136 @@
+# ====================================================
+# MACRO ERROR DETECTION
+# ====================================================
+
+MNT = {}
+
+code = [
+
+    "MACRO",
+    "INCR &A",
+    "ADD &A, 1",
+    "MEND",
+
+    "MACRO",
+    "SUM &X, &Y",
+    "ADD &X, &Y",
+    "MEND",
+
+    # PROGRAM
+    "START",
+
+    "INCR A",
+
+    "SUM A",              # WRONG ARG COUNT
+
+    "MULTI A, B",         # UNDEFINED MACRO
+
+    "END"
+]
+
+# ====================================================
+# PASS 1 : BUILD MNT
+# ====================================================
+
+i = 0
+
+program = []
+
+while i < len(code):
+
+    line = code[i]
+
+    if line == "MACRO":
+
+        i += 1
+
+        parts = code[i].replace(",", "").split()
+
+        name = parts[0]
+
+        params = parts[1:]
+
+        # --------------------------------------------
+        # DUPLICATE MACRO CHECK
+        # --------------------------------------------
+
+        if name in MNT:
+
+            print("ERROR : Duplicate Macro Definition ->", name)
+
+        else:
+
+            MNT[name] = len(params)
+
+        # Skip body
+        i += 1
+
+        while code[i] != "MEND":
+
+            i += 1
+
+    else:
+
+        program.append(line)
+
+    i += 1
+
+# ====================================================
+# PASS 2 : CHECK MACRO CALLS
+# ====================================================
+
+print()
+print("=" * 60)
+print("MACRO ERROR CHECKING")
+print("=" * 60)
+
+standard = ["START", "END", "ADD", "SUB", "MOV"]
+
+for line in program:
+
+    parts = line.replace(",", "").split()
+
+    if not parts:
+        continue
+
+    name = parts[0]
+
+    # Ignore normal instructions
+    if name in standard:
+
+        print(line)
+
+        continue
+
+    # ------------------------------------------------
+    # MACRO EXISTS
+    # ------------------------------------------------
+
+    if name in MNT:
+
+        actual = len(parts) - 1
+
+        expected = MNT[name]
+
+        # WRONG ARGUMENT COUNT
+        if actual != expected:
+
+            print("ERROR : Wrong Arguments in", name)
+
+            print("Expected =", expected)
+
+            print("Given    =", actual)
+
+        else:
+
+            print("VALID MACRO CALL ->", line)
+
+    # ------------------------------------------------
+    # MACRO NOT DEFINED
+    # ------------------------------------------------
+
+    else:
+
+        print("ERROR : Macro Not Defined ->", name)
+
+print("=" * 60)

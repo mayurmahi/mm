@@ -1,0 +1,53 @@
+tc = lc = 0
+
+def temp():
+    global tc; tc += 1; return "t" + str(tc)
+
+def label():
+    global lc; lc += 1; return "L" + str(lc)
+
+def expr(e):
+    e = e.strip()
+    for op in ['+', '-']:
+        if op in e:
+            a, b = e.split(op, 1)
+            t1 = expr(a); t2 = expr(b)
+            t = temp(); print(t, "=", t1, op, t2); return t
+    for op in ['*', '/']:
+        if op in e:
+            a, b = e.split(op, 1)
+            t1 = expr(a); t2 = expr(b)
+            t = temp(); print(t, "=", t1, op, t2); return t
+    return e
+
+def condition(cond):
+    for op in ['<=', '>=', '==', '!=', '<', '>']:
+        if op in cond:
+            a, b = cond.split(op, 1)
+            t = temp(); print(t, "=", a.strip(), op, b.strip()); return t
+
+def ifelse(cond, then, els=None):
+    t = condition(cond)
+    L1, L2, L3 = label(), label(), label()
+    print("if", t, "goto", L1)
+    print("goto", L2)
+    print(L1 + ":")
+    lhs, rhs = then.split("=", 1)
+    r = expr(rhs); print(lhs.strip(), "=", r)
+    if els:
+        print("goto", L3)
+        print(L2 + ":")
+        lhs2, rhs2 = els.split("=", 1)
+        r2 = expr(rhs2); print(lhs2.strip(), "=", r2)
+        print(L3 + ":")
+    else:
+        print(L2 + ":")
+
+inp = input("Enter: ")
+cond = inp[inp.index('(')+1 : inp.index(')')]
+rest = inp[inp.index(')')+1:].strip()
+if "else" in rest:
+    then, els = rest.split("else")
+    ifelse(cond, then.strip(), els.strip())
+else:
+    ifelse(cond, rest)

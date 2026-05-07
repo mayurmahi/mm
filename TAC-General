@@ -1,0 +1,110 @@
+# ====================================================
+# TAC FOR GENERAL EXPRESSIONS
+# ====================================================
+
+temp = 0
+
+def newtemp():
+    global temp
+    temp += 1
+    return "t" + str(temp)
+
+def precedence(op):
+
+    if op in ['+', '-']:
+        return 1
+
+    if op in ['*', '/']:
+        return 2
+
+    return 0
+
+def infix_to_postfix(exp):
+
+    stack = []
+
+    post = []
+
+    i = 0
+
+    while i < len(exp):
+
+        ch = exp[i]
+
+        if ch.isalnum():
+
+            operand = ""
+
+            while i < len(exp) and exp[i].isalnum():
+
+                operand += exp[i]
+
+                i += 1
+
+            post.append(operand)
+
+            continue
+
+        elif ch == '(':
+
+            stack.append(ch)
+
+        elif ch == ')':
+
+            while stack[-1] != '(':
+
+                post.append(stack.pop())
+
+            stack.pop()
+
+        elif ch in ['+', '-', '*', '/']:
+
+            while stack and precedence(stack[-1]) >= precedence(ch):
+
+                post.append(stack.pop())
+
+            stack.append(ch)
+
+        i += 1
+
+    while stack:
+
+        post.append(stack.pop())
+
+    return post
+
+def tac(postfix):
+
+    stack = []
+
+    for x in postfix:
+
+        if x in ['+', '-', '*', '/']:
+
+            b = stack.pop()
+
+            a = stack.pop()
+
+            t = newtemp()
+
+            print(t, "=", a, x, b)
+
+            stack.append(t)
+
+        else:
+
+            stack.append(x)
+
+    return stack[-1]
+
+# ====================================================
+
+exp = input("Enter Expression : ")
+
+lhs, rhs = exp.split("=")
+
+post = infix_to_postfix(rhs)
+
+res = tac(post)
+
+print(lhs, "=", res)

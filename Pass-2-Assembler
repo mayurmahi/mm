@@ -1,0 +1,59 @@
+# ====================================================
+# PASS 2 ASSEMBLER
+# ====================================================
+
+IC = [
+
+    "100 (IS,04) (R,1) (S,A)",
+    "101 (IS,01) (R,1) (L,0)",
+    "102 (IS,00)"
+]
+
+SYMTAB = {
+
+    "A": 500
+}
+
+LITTAB = [
+
+    ["='5'", 600]
+]
+
+print()
+print("=" * 50)
+print("MACHINE CODE")
+print("=" * 50)
+
+print("LC\tOP\tREG\tMEM")
+
+for line in IC:
+
+    parts = line.split()
+
+    lc = parts[0]
+
+    opcode = parts[1][4:6]
+
+    reg = "0"
+
+    mem = "000"
+
+    for p in parts:
+
+        if "(R," in p:
+
+            reg = p[3]
+
+        elif "(S," in p:
+
+            sym = p[3:-1]
+
+            mem = SYMTAB[sym]
+
+        elif "(L," in p:
+
+            idx = int(p[3:-1])
+
+            mem = LITTAB[idx][1]
+
+    print(lc, "\t", opcode, "\t", reg, "\t", mem)

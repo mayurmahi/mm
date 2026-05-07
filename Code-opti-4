@@ -1,0 +1,281 @@
+TAC = [
+
+    "t1 = 10 + 20",
+    "t2 = t1",
+
+    "L1:",
+
+    "t3 = a + b",
+    "t4 = a + b",
+
+    "if t3 < c goto L2",
+
+    "goto L3",
+
+    "L2:",
+
+    "x = t2",
+    "y = t4",
+
+    "t5 = 5 * 2",
+    "t6 = t5",
+
+    "goto L1",
+
+    "L3:",
+
+    "z = t6"
+]
+
+
+
+print()
+print("=" * 75)
+print("ORIGINAL THREE ADDRESS CODE")
+print("=" * 75)
+
+for line in TAC:
+
+    print(line)
+
+# ============================================================
+# DATA STRUCTURES
+# ============================================================
+
+optimized = []
+
+copy_table = {}
+
+expr_table = {}
+
+used = set()
+
+# ============================================================
+# FIND USED VARIABLES
+# ============================================================
+
+for line in TAC:
+
+    # Skip labels
+    if ":" in line:
+        continue
+
+    # Skip goto
+    if line.startswith("goto"):
+        continue
+
+    # Skip if goto
+    if line.startswith("if"):
+
+        parts = line.split()
+
+        for p in parts:
+
+            if p.isalpha() or p.startswith("t"):
+
+                used.add(p)
+
+        continue
+
+    # Normal assignment
+    if "=" in line:
+
+        lhs, rhs = line.split("=")
+
+        tokens = rhs.strip().split()
+
+        for t in tokens:
+
+            if t.isalpha() or t.startswith("t"):
+
+                used.add(t)
+
+# ============================================================
+# MAIN OPTIMIZATION
+# ============================================================
+
+for line in TAC:
+
+    # ========================================================
+    # LABELS
+    # ========================================================
+
+    if ":" in line:
+
+        optimized.append(line)
+
+        continue
+
+    # ========================================================
+    # GOTO
+    # ========================================================
+
+    if line.startswith("goto"):
+
+        optimized.append(line)
+
+        continue
+
+    # ========================================================
+    # IF GOTO
+    # ========================================================
+
+    if line.startswith("if"):
+
+        optimized.append(line)
+
+        continue
+
+    # ========================================================
+    # ASSIGNMENTS
+    # ========================================================
+
+    if "=" in line:
+
+        lhs, rhs = line.split("=")
+
+        lhs = lhs.strip()
+
+        rhs = rhs.strip()
+
+        tokens = rhs.split()
+
+        # ----------------------------------------------------
+        # CONSTANT FOLDING
+        # ----------------------------------------------------
+
+        if len(tokens) == 3:
+
+            a, op, b = tokens
+
+            if a.isdigit() and b.isdigit():
+
+                result = str(eval(a + op + b))
+
+                optimized.append(lhs + " = " + result)
+
+                copy_table[lhs] = result
+
+                continue
+
+        # ----------------------------------------------------
+        # COPY PROPAGATION
+        # ----------------------------------------------------
+
+        if len(tokens) == 1:
+
+            val = tokens[0]
+
+            if val in copy_table:
+
+                val = copy_table[val]
+
+            optimized.append(lhs + " = " + val)
+
+            copy_table[lhs] = val
+
+            continue
+
+        # ----------------------------------------------------
+        # CONSTANT PROPAGATION
+        # ----------------------------------------------------
+
+        if len(tokens) == 3:
+
+            a, op, b = tokens
+
+            if a in copy_table:
+
+                a = copy_table[a]
+
+            if b in copy_table:
+
+                b = copy_table[b]
+
+            rhs = a + " " + op + " " + b
+
+            # ------------------------------------------------
+            # COMMON SUBEXPRESSION
+            # ------------------------------------------------
+
+            if rhs in expr_table:
+
+                optimized.append(lhs + " = " + expr_table[rhs])
+
+                copy_table[lhs] = expr_table[rhs]
+
+            else:
+
+                expr_table[rhs] = lhs
+
+                optimized.append(lhs + " = " + rhs)
+
+            continue
+
+        # ----------------------------------------------------
+        # DEFAULT
+        # ----------------------------------------------------
+
+        optimized.append(line)
+
+# ============================================================
+# DEAD CODE ELIMINATION
+# ============================================================
+
+final_TAC = []
+
+for line in optimized:
+
+    # Keep labels
+    if ":" in line:
+
+        final_TAC.append(line)
+
+        continue
+
+    # Keep goto
+    if line.startswith("goto"):
+
+        final_TAC.append(line)
+
+        continue
+
+    # Keep if goto
+    if line.startswith("if"):
+
+        final_TAC.append(line)
+
+        continue
+
+    # Assignments
+    if "=" in line:
+
+        lhs = line.split("=")[0].strip()
+
+        # Keep non-temp variables
+        if not lhs.startswith("t"):
+
+            final_TAC.append(line)
+
+        # Keep used temporaries
+        elif lhs in used:
+
+            final_TAC.append(line)
+
+# ============================================================
+# DISPLAY OPTIMIZED CODE
+# ============================================================
+
+print()
+print("=" * 75)
+print("OPTIMIZED THREE ADDRESS CODE")
+print("=" * 75)
+
+for line in final_TAC:
+
+    print(line)
+
+print()
+print("=" * 75)
+print("OPTIMIZATION COMPLETE")
+print("=" * 75)

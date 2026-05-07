@@ -1,0 +1,27 @@
+%{
+#include <stdio.h>
+%}
+%%
+"car"|"house"|"man"|"city"|"ocean"      { printf("%s = NOUN\n", yytext); }
+"he"|"she"|"we"|"they"|"it"            { printf("%s = PRONOUN\n", yytext); }
+"go"|"come"|"walk"|"read"|"write"      { printf("%s = VERB\n", yytext); }
+"pretty"|"old"|"blue"|"smart"          { printf("%s = ADJECTIVE\n", yytext); }
+"actually"|"calmly"|"brightly"         { printf("%s = ADVERB\n", yytext); }
+"by"|"with"|"about"|"until"            { printf("%s = PREPOSITION\n", yytext); }
+"and"|"but"|"or"|"while"|"because"     { printf("%s = CONJUNCTION\n", yytext); }
+"Oh!"|"Wow!"|"Oops!"                   { printf("%s = INTERJECTION\n", yytext); }
+[a-zA-Z!]+                             { printf("%s = UNKNOWN\n", yytext); }
+[ \t\n]                                { ; }
+%%
+int yywrap(){ return 1; }
+int main(){
+    printf("Enter sentence (Ctrl+D to stop):\n");
+    yylex();
+    printf("\nDone!\n");
+    return 0;
+}
+
+
+sudo apt install flex bison gcc
+flex eng.l && gcc lex.yy.c -o eng -lfl && ./eng
+yacc -d combine.y && flex combine.l && gcc lex.yy.c y.tab.c -o combine -lfl -lm && ./combine

@@ -1,0 +1,27 @@
+%{
+#include "y.tab.h"
+#include <stdlib.h>
+#include <string.h>
+
+char line[100];
+int pos = 0;
+#undef YY_INPUT
+#define YY_INPUT(b,r,m) { int c=line[pos]; b[0]=c; r=(c?1:YY_NULL); if(c)pos++; }
+%}
+%%
+"sqrt"              return SQRT;
+"strlen"            return STRLEN;
+[a-zA-Z]            return ALPHA;
+\"[^\"]*\"          { yytext[yyleng-1]='\0'; yylval.sval=strdup(yytext+1); return STRING; }
+[0-9]+(\.[0-9]+)?   { yylval.dval=atof(yytext); return NUMBER; }
+"_"                 return UNDER;
+"+"                 return '+';
+"-"                 return '-';
+"*"                 return '*';
+"/"                 return '/';
+"("                 return '(';
+")"                 return ')';
+\n                  return '\n';
+[ \t]               ;
+%%
+int yywrap(){ return 1; }
